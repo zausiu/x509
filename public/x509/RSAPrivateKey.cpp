@@ -28,14 +28,14 @@ RSAPrivateKey::~RSAPrivateKey()
 	BIO_free(bi_);
 }
 
-std::string RSAPrivateKey::sign_signature(int type, unsigned char *m, unsigned int m_len)
+std::string RSAPrivateKey::sign_signature(const char *m, unsigned int m_len)
 {
 	unsigned char buff[4096];
 	unsigned int buff_len = sizeof(buff);
 
 	RSA* rsa = pkey_->pkey.rsa;
 
-	int ret = RSA_sign(NID_sha256, m, m_len, buff, &buff_len, rsa);
+	int ret = RSA_sign(NID_sha256, (unsigned char*)m, m_len, buff, &buff_len, rsa);
 	if (ret != 1)
 	{
 		throw std::runtime_error("Failed to call RSA_sign.");

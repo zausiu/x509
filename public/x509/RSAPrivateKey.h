@@ -19,7 +19,7 @@ public:
 	RSAPrivateKey(const char* key_path);
 	virtual ~RSAPrivateKey();
 
-	std::string sign_signature(int type, unsigned char *m, unsigned int m_len);
+	std::string sign_signature(const char *m, unsigned int m_len);
 
 private:
 	BIO* bi_;

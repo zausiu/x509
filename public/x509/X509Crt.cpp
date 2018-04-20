@@ -5,20 +5,38 @@
  *      Author: kamuszhou
  *  website: http://blog.ykyi.net
  */
-#include "x509/X509Crt.h"
 #include <fstream>
 #include <streambuf>
 #include <stdexcept>
+#include "x509/X509Crt.h"
 #include "spdlog/fmt/fmt.h"
+#include "Base64.h"
 
 X509Crt::X509Crt(const char* crt_path)
 {
 	crt_path_ = crt_path;
 	bi_ = BIO_new(BIO_s_file());
 	int ret = BIO_read_filename(bi_, crt_path);
-	if (ret < 0 || ((x509_ = PEM_read_bio_X509_AUX(bi_, NULL, NULL, NULL)) == NULL))
+	if (ret < 0)
 	{
-		std::string errinfo = fmt::format("Failed to load x509 certificate: {}", crt_path);
+		std::string errinfo = fmt::format("Failed to load x509 certificate: {}.", crt_path_);
+		throw std::runtime_error(errinfo);
+	}
+	internal_init();
+}
+
+X509Crt::X509Crt(const char* mem, int mem_len)
+{
+	crt_as_str_.assign(mem, mem + mem_len);
+	bi_ = BIO_new_mem_buf(crt_as_str_.data(), mem_len);
+	internal_init();
+}
+
+void X509Crt::internal_init()
+{
+	if ((x509_ = PEM_read_bio_X509_AUX(bi_, NULL, NULL, NULL)) == NULL)
+	{
+		std::string errinfo = fmt::format("Failed to read x509 certificate.");
 		throw std::runtime_error(errinfo);
 	}
 	serial_ = get_serial_core();
@@ -126,17 +144,34 @@ EVP_PKEY* X509Crt::extract_pkey_core()const
 
 std::string X509Crt::as_str()const
 {
-	std::ifstream fs(crt_path_);
+	assert(!(crt_path_.empty() && crt_as_str_.empty()));
 
-	std::string str((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
-
-	return str;
+	if (!crt_path_.empty())
+	{
+		std::ifstream fs(crt_path_);
+		std::string str((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
+		return str;
+	}
+	else
+	{
+		return crt_as_str_;
+	}
 }
 
-int X509Crt::verify_signature(int type, unsigned char *m, unsigned int m_len,
-			unsigned char *sigbuf, unsigned int siglen, RSA *rsa)const
+int X509Crt::verify_signature(const char *m, unsigned int m_len, const char* signature_b64)const
 {
-	int ret = RSA_verify(NID_sha256, m, m_len, sigbuf, siglen, rsa_key_);
+	int len = Base64decode_len(signature_b64);
+	std::vector<char> buff(len);
+	int ret = Base64decode(buff.data(), signature_b64);
+	buff.resize(ret);
+
+	ret = RSA_verify(NID_sha256, (const unsigned char*)m, m_len,
+			(const unsigned char*)buff.data(), buff.size(), rsa_key_);
 
 	return ret;
+}
+
+X509* X509Crt::get_x509_crt()const
+{
+	return x509_;
 }
