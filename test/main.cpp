@@ -11,6 +11,9 @@
 #include "x509/X509Crt.h"
 #include "x509/X509Verifier.h"
 
+#define CRT_HOME "/home/kamus/projs/openssl/"
+// #define CRT_HOME "/data/kamus/projs/openssl/"
+
 using namespace std;
 
 int main(int argc, char** argv)
@@ -21,10 +24,10 @@ int main(int argc, char** argv)
 
 	for (int i = 0; i < 100000; i++)
 	{
-		X509Crt ca_crt("/home/kamus/projs/openssl/ca.crt");
+		X509Crt ca_crt(CRT_HOME"ca.crt");
 		cout << "serial: " << ca_crt.get_serial() << endl;
 
-		X509Crt crt("/home/kamus/projs/openssl/test.crt");
+		X509Crt crt(CRT_HOME"test.crt");
 		cout << "serial: " << crt.get_serial() << endl;
 
 		std::string crt_as_str = crt.as_str();
@@ -32,15 +35,21 @@ int main(int argc, char** argv)
 
 		const char* msg = "hello, world.";
 		int msg_len = strlen(msg);
-		RSAPrivateKey pkey("/home/kamus/projs/openssl/test.key");
+		RSAPrivateKey pkey(CRT_HOME"test.key");
 		std::string signature_b64 = pkey.sign_signature(msg, msg_len);
 
 		int ret = crt_copy.verify_signature(msg, msg_len, signature_b64.c_str());
 		cout << "signature verification: " << ret << "\n";
 
-		X509Verifier verifier("/home/kamus/projs/openssl/ca.crt");
+		X509Verifier verifier(CRT_HOME"ca.crt");
 		cout << "ca certifcation verification: " << verifier.is_legal(ca_crt.get_x509_crt()) << "\n";
-		cout << "test certifcation verification: " << verifier.is_legal(crt.get_x509_crt()) << "\n";
+		cout << "test certifcation verification: " << verifier.is_legal(crt_copy.get_x509_crt()) << "\n";
+
+		std::string cealed_text = crt_copy.ceal_text_base64(msg, msg_len);
+		cout << "cealed_text: " << cealed_text << "\n";
+
+		std::string uncealed_text = pkey.unceal_text_base64(cealed_text.c_str());
+		cout << "uncealed_text: " << uncealed_text << "\n";
 
 		cout << i << endl;
 	}

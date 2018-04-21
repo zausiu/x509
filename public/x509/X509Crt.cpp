@@ -5,6 +5,8 @@
  *      Author: kamuszhou
  *  website: http://blog.ykyi.net
  */
+#include <time.h>
+#include <stdlib.h>
 #include <fstream>
 #include <streambuf>
 #include <stdexcept>
@@ -12,7 +14,21 @@
 #include "spdlog/fmt/fmt.h"
 #include "Base64.h"
 
+X509Crt::X509Crt()
+{
+}
+
 X509Crt::X509Crt(const char* crt_path)
+{
+	init(crt_path);
+}
+
+X509Crt::X509Crt(const char* mem, int mem_len)
+{
+	init(mem, mem_len);
+}
+
+void X509Crt::init(const char* crt_path)
 {
 	crt_path_ = crt_path;
 	bi_ = BIO_new(BIO_s_file());
@@ -25,10 +41,10 @@ X509Crt::X509Crt(const char* crt_path)
 	internal_init();
 }
 
-X509Crt::X509Crt(const char* mem, int mem_len)
+void X509Crt::init(const char* mem, int mem_len)
 {
 	crt_as_str_.assign(mem, mem + mem_len);
-	bi_ = BIO_new_mem_buf(crt_as_str_.data(), mem_len);
+	bi_ = BIO_new_mem_buf(const_cast<char*>(crt_as_str_.data()), mem_len);
 	internal_init();
 }
 
@@ -42,10 +58,14 @@ void X509Crt::internal_init()
 	serial_ = get_serial_core();
 	pkey_ = extract_pkey_core();
 	rsa_key_ = pkey_->pkey.rsa;
+
+	cipher_ctx_ = EVP_CIPHER_CTX_new();
+	srand(time(NULL));
 }
 
 X509Crt::~X509Crt()
 {
+	EVP_CIPHER_CTX_free(cipher_ctx_);
 	X509_free(x509_);
 	EVP_PKEY_free(pkey_);
 	BIO_free(bi_);
@@ -169,6 +189,76 @@ int X509Crt::verify_signature(const char *m, unsigned int m_len, const char* sig
 			(const unsigned char*)buff.data(), buff.size(), rsa_key_);
 
 	return ret;
+}
+
+std::string X509Crt::ceal_text(const char* m, int m_len)
+{
+	int pubkey_len = EVP_PKEY_size(pkey_);
+	std::vector<char> ek_buffer(pubkey_len);
+	char* ek[1] = { ek_buffer.data() };
+	int ekl[1] = { pubkey_len };
+
+	unsigned char iv[EVP_MAX_IV_LENGTH];
+	int actual_iv_len = EVP_CIPHER_iv_length(EVP_aes_256_cbc());
+	int r = rand();
+	memcpy(iv, &r, sizeof(r));
+
+	EVP_PKEY* pubk[1] = { pkey_ };
+	int npubk = 1;
+
+	int ret = EVP_SealInit(cipher_ctx_, EVP_aes_256_cbc(), (unsigned char**)ek, ekl, iv, pubk, npubk);
+	if (ret != 1)
+	{
+		throw std::runtime_error("EVP_SealInit failed.");
+	}
+
+	std::vector<char> out(m_len * 2);
+	int out_len = out.size();
+	ret = EVP_SealUpdate(cipher_ctx_, (unsigned char*)out.data(), &out_len, (unsigned char*)m, m_len);
+	if (ret != 1)
+	{
+		throw std::runtime_error("EVP_SealUpdate failed.");
+	}
+
+	int written_len2;
+	unsigned char* out_data = (unsigned char*)out.data();
+	ret = EVP_SealFinal(cipher_ctx_, out_data + out_len, &written_len2);
+	if (ret != 1)
+	{
+		throw std::runtime_error("EVP_SealFinal failed.");
+	}
+
+	int total_written_len = written_len2 + out_len;
+
+	int keyl = ekl[0];
+	int cealed_txt_len = sizeof(keyl) + keyl + actual_iv_len + total_written_len;
+	std::string cealed_txt_str;
+	cealed_txt_str.resize(cealed_txt_len );
+	char* cealed_txt_data = const_cast<char*>(cealed_txt_str.data());
+	char* sentinel = cealed_txt_data;
+	memcpy(sentinel, &keyl, sizeof(keyl));
+	sentinel += sizeof(keyl);
+	memcpy(sentinel, ek[0], keyl);
+	sentinel += keyl;
+	memcpy(sentinel, iv, actual_iv_len);
+	sentinel += actual_iv_len;
+	memcpy(sentinel, out.data(), total_written_len);
+
+	return cealed_txt_str;
+}
+
+std::string X509Crt::ceal_text_base64(const char* m, int m_len)
+{
+	std::string cealed_txt_str = ceal_text(m, m_len);
+	int cealed_txt_len = cealed_txt_str.size();
+	int b64encode_len = Base64encode_len(cealed_txt_len);
+	std::string cealed_txt_b64_str;
+	cealed_txt_b64_str.resize(b64encode_len);
+	const char* cealed_txt_data = cealed_txt_str.data();
+	int ret = Base64encode(const_cast<char*>(cealed_txt_b64_str.data()), cealed_txt_data, cealed_txt_len);
+	cealed_txt_b64_str.resize(ret);
+
+	return cealed_txt_b64_str;
 }
 
 X509* X509Crt::get_x509_crt()const

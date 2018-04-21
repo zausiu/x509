@@ -21,9 +21,14 @@ public:
 
 	std::string sign_signature(const char *m, unsigned int m_len);
 
+	std::string unceal_text(const char* cealed_txt_str, int cealed_txt_len);
+	std::string unceal_text_base64(const char* cealed_txt_base64_str);
+
 private:
 	BIO* bi_;
 	EVP_PKEY* pkey_;
+
+	EVP_CIPHER_CTX* cipher_ctx_;
 };
 
 #endif /* PUBLIC_RSAPRIVATEKEY_H_ */
