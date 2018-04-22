@@ -129,4 +129,6 @@ void Conf::loadConfFromJson()
 		{"off", spdlog::level::off},
 	};
 	log_level_ = level_map.at(log_level_str_);
+
+    ca_crt_path_ = jv_root["ca_crt_path"].asString();
 }

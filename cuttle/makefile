@@ -4,6 +4,6 @@ projname := cuttle
 
 CPPFLAGS += -std=c++11 -g -DVERSION_MAJOR=1 -DVERSION_MINOR=0 
 #CXXFLAGS += -fvisibility=hidden -Wfatal-errors
-LINKFLAGS += -lczmq -lzmq -lsodium
+LINKFLAGS += -lsodium -lboost_random -lzookeeper_mt
 
 include ../common.mk

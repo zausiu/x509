@@ -6,9 +6,9 @@
 
 OtterImpl otter_impl;
 
-void otter_init(const char* crt_path)
+void otter_init(const char* crt_path, const char* key_path)
 {
-	otter_impl.init(crt_path);
+	otter_impl.init(crt_path, key_path);
 }
 
 int otter_get_key_and_salt(int year, int month, int day, int hour,

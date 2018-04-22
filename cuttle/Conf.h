@@ -44,6 +44,10 @@ public:
 		return log_level_;
 	}
 
+    const std::string& getCACrtPath()const
+    {
+        return ca_crt_path_;
+    }
 
 private:
 	void loadConfFromJson();
@@ -57,6 +61,8 @@ private:
 	std::string log_file_name_;
 	std::string log_level_str_;
 	spdlog::level::level_enum log_level_;
+
+    std::string ca_crt_path_;
 };
 
 #endif

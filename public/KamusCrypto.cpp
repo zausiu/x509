@@ -8,6 +8,8 @@
 #include <KamusCrypto.h>
 #include <exception>
 
+KamusCrypto g_crypto;
+
 KamusCrypto::KamusCrypto()
 {
 	memset(nonce_, '\xab', sizeof(nonce_));

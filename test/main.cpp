@@ -10,6 +10,7 @@
 #include "x509/RSAPrivateKey.h"
 #include "x509/X509Crt.h"
 #include "x509/X509Verifier.h"
+#include "NeatUtilities.h"
 
 #define CRT_HOME "/home/kamus/projs/openssl/"
 // #define CRT_HOME "/data/kamus/projs/openssl/"
@@ -22,7 +23,7 @@ int main(int argc, char** argv)
 	OpenSSL_add_all_ciphers();
 	OpenSSL_add_all_algorithms();
 
-	for (int i = 0; i < 100000; i++)
+	for (int i = 0; i < 1; i++)
 	{
 		X509Crt ca_crt(CRT_HOME"ca.crt");
 		cout << "serial: " << ca_crt.get_serial() << endl;
@@ -53,7 +54,8 @@ int main(int argc, char** argv)
 
 		cout << i << endl;
 	}
-	sleep(1);
+
+	cout << form_dayhour_uid(2018, 1, 2, 3) << "\n";
 
 	return 0;
 }
