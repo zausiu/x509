@@ -92,7 +92,7 @@ void Conf::init(int argc, char** argv)
 
 	std::cout << "log_level: " << log_level_str_ << "\n";
 
-	std::cout << "...\n" << "Conf loading's DONE.\n";
+	std::cout << "...\n" << "Conf-loading's DONE.\n";
 }
 
 void Conf::loadConfFromJson()

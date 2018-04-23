@@ -5,10 +5,12 @@
 #include "CuttleImpl.h"
 #include "Conf.h"
 #include "SnazzyLogger.h"
+#include "KamusCrypto.h"
 
 int main(int argc, char** argv)
 {
 	g_conf.init(argc, argv);
+	g_crypto.Init();
 
 	const std::string& log_file_name = g_conf.getLogFileName();
 	spdlog::level::level_enum log_level = g_conf.getLogLevel();

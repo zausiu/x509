@@ -20,6 +20,7 @@
 #include "Base64.h"
 #include "NeatUtilities.h"
 #include "OtterImpl.h"
+#include "x509/X509Verifier.h"
 
 OtterImpl::OtterImpl()
 {
@@ -33,6 +34,10 @@ OtterImpl::~OtterImpl()
 
 void OtterImpl::init(const char* crt_path, const char* key_path)
 {
+	OpenSSL_add_all_digests();
+	OpenSSL_add_all_ciphers();
+	OpenSSL_add_all_algorithms();
+
 	x509_crt_.init(crt_path);
     key_ = new RSAPrivateKey(key_path);
 
@@ -135,10 +140,10 @@ int OtterImpl::get_key_and_salt(int year, int month, int day, int hour,
 				const std::string& salt_b64 = jv_root["salt"].asString();
  
                 const std::string& tmpk = key_->unceal_text_base64(key_b64.c_str());
-                memcpy(kns.key, tmpk.data(), sizeof(kns.key));
+                Base64decode(kns.key, tmpk.data());
 
                 const std::string& tmps = key_->unceal_text_base64(salt_b64.c_str());
-                memcpy(kns.salt, tmps.data(), sizeof(kns.salt));
+                Base64decode(kns.salt, tmps.data());
 
                 if (kns_map_.size() > 24)
                 {
@@ -225,21 +230,33 @@ int OtterImpl::establish_short_tcp_conn(const std::string& ip, unsigned short po
 std::string OtterImpl::build_request(int year, int month, int day, int hour)
 {
 	Json::Value jv_root;
-	jv_root["crt"] = x509_crt_.as_str();
 	jv_root["year"] = year;
 	jv_root["month"] = month;
 	jv_root["day"] = day;
 	jv_root["hour"] = hour;
+	jv_root["crt"] = x509_crt_.as_str();
 
-	std::string str = jv_root.asString();
+	Json::FastWriter fastwriter;
+	std::string str = fastwriter.write(jv_root);
 
 	return str;
 }
 
 int OtterImpl::send_request(int sockfd, const std::string& req)
 {
-	int len = req.size();
-	int ret = send_all(sockfd, (const char*)&len, sizeof(len));
+	int req_len = req.size();
+	std::vector<char> total(req_len + sizeof(req_len));
+	char* data = total.data();
+	memcpy(data, &req_len, sizeof(req_len));
+	memcpy(data + sizeof(req_len), req.data(), req_len);
+
+	int ret = send_all(sockfd, data, total.size());
+	if (ret < 0)
+	{
+		std::string err_msg = fmt::format("Failed to send request to server, cos: {}", strerror(errno));
+		std::cerr << err_msg << "\n";
+		return ret;
+	}
 
 	return 0;
 }
@@ -250,6 +267,8 @@ int OtterImpl::recv_response(int fd, std::string* resp)
 	int ret = recv(fd, &len, sizeof(len), MSG_WAITALL);
 	if (ret < sizeof(len))
 	{
+		std::string err_msg = fmt::format("Failed to receive response from server, cos: {}", strerror(errno));
+		std::cerr << err_msg << "\n";
 		return -1;
 	}
 
@@ -258,6 +277,8 @@ int OtterImpl::recv_response(int fd, std::string* resp)
 	ret = recv(fd, const_cast<char*>(resp_str.data()), len, MSG_WAITALL);
 	if (ret < len)
 	{
+		std::string err_msg = fmt::format("Failed to receive response from server, cos: {}", strerror(errno));
+		std::cerr << err_msg << "\n";
 		return -1;
 	}
 

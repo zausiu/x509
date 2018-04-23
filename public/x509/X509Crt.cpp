@@ -52,7 +52,7 @@ void X509Crt::internal_init()
 {
 	if ((x509_ = PEM_read_bio_X509_AUX(bi_, NULL, NULL, NULL)) == NULL)
 	{
-		std::string errinfo = fmt::format("Failed to read x509 certificate.");
+		std::string errinfo = fmt::format("Failed to read/parse x509 certificate.");
 		throw std::runtime_error(errinfo);
 	}
 	serial_ = get_serial_core();

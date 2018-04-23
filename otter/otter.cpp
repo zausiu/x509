@@ -2,6 +2,7 @@
 /// written by kamuszhou@tencent.com http://blog.ykyi.net
 /// created on April 18, 2018
 /////////////////////////////////////////////////////////////
+#include "otter.h"
 #include "OtterImpl.h"
 
 OtterImpl otter_impl;

@@ -35,6 +35,10 @@ int send_all(int fd, const char* m, int m_len)
                         std::cerr << err_msg << std::endl;
                         return ret;
                 }
+                else
+                {
+                	remained_len -= ret;
+                }
         }
 
         return 0;
