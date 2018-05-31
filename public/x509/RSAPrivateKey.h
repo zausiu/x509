@@ -21,7 +21,7 @@ public:
 
 	std::string sign_signature(const char *m, unsigned int m_len);
 
-	std::string unceal_text(const char* cealed_txt_str, int cealed_txt_len);
+	std::string unseal_text(const char* cealed_txt_str, int cealed_txt_len);
 	std::string unceal_text_base64(const char* cealed_txt_base64_str);
 
 private:

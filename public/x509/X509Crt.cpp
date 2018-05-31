@@ -191,7 +191,7 @@ int X509Crt::verify_signature(const char *m, unsigned int m_len, const char* sig
 	return ret;
 }
 
-std::string X509Crt::ceal_text(const char* m, int m_len)
+std::string X509Crt::seal_text(const char* m, int m_len)
 {
 	int pubkey_len = EVP_PKEY_size(pkey_);
 	std::vector<char> ek_buffer(pubkey_len);
@@ -247,9 +247,9 @@ std::string X509Crt::ceal_text(const char* m, int m_len)
 	return cealed_txt_str;
 }
 
-std::string X509Crt::ceal_text_base64(const char* m, int m_len)
+std::string X509Crt::seal_text_base64(const char* m, int m_len)
 {
-	std::string cealed_txt_str = ceal_text(m, m_len);
+	std::string cealed_txt_str = seal_text(m, m_len);
 	int cealed_txt_len = cealed_txt_str.size();
 	int b64encode_len = Base64encode_len(cealed_txt_len);
 	std::string cealed_txt_b64_str;

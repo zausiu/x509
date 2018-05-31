@@ -180,8 +180,8 @@ void CuttleImpl::run_once()
 	jv_resp["month"] = month;
 	jv_resp["day"] = day;
 	jv_resp["hour"] = hour;
-	jv_resp["key"] = client_crt.ceal_text_base64(key_b64.data(), key_b64.size());
-	jv_resp["salt"] = client_crt.ceal_text_base64(salt_b64.data(), salt_b64.size());
+	jv_resp["key"] = client_crt.seal_text_base64(key_b64.data(), key_b64.size());
+	jv_resp["salt"] = client_crt.seal_text_base64(salt_b64.data(), salt_b64.size());
 
 	Json::FastWriter fastWriter;
 	std::string resp_text = fastWriter.write(jv_resp);

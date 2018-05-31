@@ -32,8 +32,8 @@ public:
 
 	int verify_signature(const char *m, unsigned int m_len, const char* signature_b64)const;
 
-	std::string ceal_text(const char* m, int m_len);
-	std::string ceal_text_base64(const char* m, int m_len);
+	std::string seal_text(const char* m, int m_len);
+	std::string seal_text_base64(const char* m, int m_len);
 
 	X509* get_x509_crt()const;
 
